@@ -40,6 +40,29 @@ Outputs feed directly into a **SAR triage workflow** aligned with POCA 2002 and 
 
 > **AUC-PR is the primary metric** for fraud detection — AUC-ROC can be misleadingly high when negatives dominate (98% of transactions are normal).
 
+### Alert-budget precision@k and cost-sensitive thresholding
+
+AUC-PR and F1 are threshold-free or treat false positives and false negatives
+as equally costly. Neither matches how a fraud-ops team actually operates:
+analyst capacity is fixed, and a missed fraud costs far more than a wasted
+investigation.
+
+| Alert budget (% of daily traffic) | Precision@k | Recall@k |
+|---|---|---|
+| 0.5% | 100% | 25% |
+| 2% | 86% | 86% |
+| 5% | 39% | 96% |
+| 10% | 20% | 98% |
+
+Under a realistic cost matrix (false alarm = £50 analyst time, missed fraud =
+£8,500 average fraud value — a ~170:1 ratio), the cost-minimising threshold
+is **0.18**, far below the F1-optimal threshold of **0.76**. Using the
+F1-optimal threshold under these real costs would cost **£110,700**; the
+cost-optimal threshold cuts that to **£24,250** — a **78% reduction**. The
+symmetric-cost-optimal threshold (0.775) essentially matches F1, confirming
+that F1 implicitly assumes false positives and false negatives are equally
+costly — an assumption this business case does not meet.
+
 ---
 
 ## Fraud Typologies Modelled
@@ -67,7 +90,8 @@ transaction-anomaly-detection/
 │   │   ├── autoencoder.py      # LSTM Autoencoder (PyTorch)
 │   │   └── ensemble.py         # XGBoost + AE score fusion
 │   ├── evaluation/
-│   │   └── metrics.py          # AUC-PR, AUC-ROC, KS, PR/ROC plots
+│   │   ├── metrics.py          # AUC-PR, AUC-ROC, KS, PR/ROC plots
+│   │   └── alert_budget.py     # precision@k/recall@k + cost-sensitive threshold
 │   ├── monitoring/
 │   │   └── drift.py            # Evidently AI + KS-test drift detection
 │   └── sar/
@@ -76,14 +100,16 @@ transaction-anomaly-detection/
 │   ├── 01_eda.ipynb                    # EDA: class imbalance, typology analysis
 │   ├── 02_unsupervised_models.ipynb    # Isolation Forest + LOF
 │   ├── 03_lstm_autoencoder.ipynb       # LSTM Autoencoder training + reconstruction error
-│   └── 04_ensemble_evaluation.ipynb    # Ensemble fusion + SAR workflow demo
+│   ├── 04_ensemble_evaluation.ipynb    # Ensemble fusion + SAR workflow demo
+│   └── 05_alert_budget_cost_sensitive.ipynb # precision@k + cost-sensitive threshold
 ├── assets/
 │   ├── architecture.png   # Pipeline + SAR workflow diagram
 │   └── results.png        # PR/ROC curves + model comparison
 └── tests/
-    ├── test_generator.py  # Data generation (7 tests)
-    ├── test_models.py     # Model training + scoring (5 tests)
-    └── test_sar.py        # SAR triage workflow (7 tests)
+    ├── test_generator.py     # Data generation (7 tests)
+    ├── test_models.py        # Model training + scoring (5 tests)
+    ├── test_sar.py           # SAR triage workflow (7 tests)
+    └── test_alert_budget.py  # precision@k/recall@k + cost threshold (10 tests)
 ```
 
 ---
@@ -169,8 +195,8 @@ The SAR workflow implements the UK AML framework:
 ## Tests
 
 ```
-19 passed in 3.07s
-Coverage: generator 100% | preprocessor 100% | sar/workflow 98%
+29 passed in 3.16s
+Coverage: generator 100% | preprocessor 100% | sar/workflow 98% | alert_budget 97%
 ```
 
 ---
@@ -182,4 +208,7 @@ This is **Project 4** of 9 in a UK job market Data Science portfolio. Demonstrat
 - LSTM Autoencoder in PyTorch for sequence modelling
 - Domain expertise: real AML/KYC typologies and regulatory framework
 - Production concerns: drift monitoring, alert triage, audit trail
-- Test-driven development: 19 tests across data, models, and SAR workflow
+- Operational framing beyond AUC-PR/F1: alert-budget precision@k for fixed
+  analyst capacity, and cost-sensitive thresholding under asymmetric FP/FN costs
+- Test-driven development: 29 tests across data, models, SAR workflow, and
+  alert-budget/cost-sensitive evaluation
