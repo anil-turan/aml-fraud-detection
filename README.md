@@ -198,17 +198,3 @@ The SAR workflow implements the UK AML framework:
 29 passed in 3.16s
 Coverage: generator 100% | preprocessor 100% | sar/workflow 98% | alert_budget 97%
 ```
-
----
-
-## Portfolio Context
-
-This is **Project 4** of 9 in a UK job market Data Science portfolio. Demonstrates:
-- Multi-model anomaly detection (unsupervised + supervised + deep learning)
-- LSTM Autoencoder in PyTorch for sequence modelling
-- Domain expertise: real AML/KYC typologies and regulatory framework
-- Production concerns: drift monitoring, alert triage, audit trail
-- Operational framing beyond AUC-PR/F1: alert-budget precision@k for fixed
-  analyst capacity, and cost-sensitive thresholding under asymmetric FP/FN costs
-- Test-driven development: 29 tests across data, models, SAR workflow, and
-  alert-budget/cost-sensitive evaluation
