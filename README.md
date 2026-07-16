@@ -63,6 +63,30 @@ symmetric-cost-optimal threshold (0.775) essentially matches F1, confirming
 that F1 implicitly assumes false positives and false negatives are equally
 costly — an assumption this business case does not meet.
 
+### Score and feature drift monitoring — exercised for the first time
+
+`src/monitoring/drift.py` (Evidently AI + KS-test fallback) has existed in
+this repo since the initial commit but was never run against real data —
+no notebook, no test. Notebook 06 closes that gap: the trained ensemble
+model scores a **control batch** (fresh sample, same 2% fraud rate) and a
+**drifted batch** (a simulated fraud campaign — fraud rate spikes to 8%),
+and both checks are evaluated against each:
+
+| Check | Control | Drifted (fraud campaign) |
+|---|---|---|
+| Score KS statistic | 0.018 (p=0.25) | **0.060 (p<0.001)** |
+| Score drift alert | No | **Yes** |
+| Mean score shift | +0.001 | **+0.056** |
+| Feature dataset drift | No | **Yes** |
+| Features flagged | 0 of 13 | **6 of 13 (46%)** |
+
+The module correctly stays quiet on the control batch and correctly fires
+on the drifted one, at both the score level and the input-feature level —
+a fraud-rate spike shifts not just the model's output but the underlying
+transaction shape (amount, hour, off-hours flag, new-payee rate), which is
+exactly why feature-level drift is a complementary signal to score drift,
+not a redundant one.
+
 ---
 
 ## Fraud Typologies Modelled
@@ -101,7 +125,8 @@ transaction-anomaly-detection/
 │   ├── 02_unsupervised_models.ipynb    # Isolation Forest + LOF
 │   ├── 03_lstm_autoencoder.ipynb       # LSTM Autoencoder training + reconstruction error
 │   ├── 04_ensemble_evaluation.ipynb    # Ensemble fusion + SAR workflow demo
-│   └── 05_alert_budget_cost_sensitive.ipynb # precision@k + cost-sensitive threshold
+│   ├── 05_alert_budget_cost_sensitive.ipynb # precision@k + cost-sensitive threshold
+│   └── 06_drift_monitoring.ipynb       # score/feature drift: control vs simulated fraud campaign
 ├── assets/
 │   ├── architecture.png   # Pipeline + SAR workflow diagram
 │   └── results.png        # PR/ROC curves + model comparison
@@ -109,7 +134,8 @@ transaction-anomaly-detection/
     ├── test_generator.py     # Data generation (7 tests)
     ├── test_models.py        # Model training + scoring (5 tests)
     ├── test_sar.py           # SAR triage workflow (7 tests)
-    └── test_alert_budget.py  # precision@k/recall@k + cost threshold (10 tests)
+    ├── test_alert_budget.py  # precision@k/recall@k + cost threshold (10 tests)
+    └── test_drift.py         # score/feature drift detection, KS-based (6 tests)
 ```
 
 ---
@@ -195,6 +221,6 @@ The SAR workflow implements the UK AML framework:
 ## Tests
 
 ```
-29 passed in 3.16s
-Coverage: generator 100% | preprocessor 100% | sar/workflow 98% | alert_budget 97%
+35 passed in ~13s
+Coverage: generator 100% | preprocessor 100% | sar/workflow 98% | alert_budget 97% | drift 67%
 ```
