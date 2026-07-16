@@ -12,7 +12,6 @@ against the reference distribution from the model training window.
 """
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Optional
 
 import numpy as np
@@ -34,7 +33,6 @@ def run_drift_report(
     try:
         from evidently.report import Report
         from evidently.metric_preset import DataDriftPreset
-        from evidently import ColumnMapping
 
         cols = feature_cols or [c for c in reference_df.columns
                                 if c not in ("transaction_id", "is_fraud", score_col)]
